@@ -1,6 +1,13 @@
+# Python
 __pycache__/
 *.pyc
+
+# Credentials
 token.json
 my_credentials.json
 
+# Generated files
 *.pdf
+
+# OS files
+.DS_Store
