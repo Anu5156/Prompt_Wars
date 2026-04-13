@@ -56,6 +56,10 @@ def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
                 chunk = min(STUDY_BLOCK, remaining[sub])
 
                 if used + chunk > daily_limit:
+                    chunk = daily_limit - used
+                
+                if chunk <= 0:
+                    used = daily_limit
                     break
 
                 end = current + timedelta(minutes=chunk)
