@@ -1,25 +1,28 @@
 from datetime import datetime, timedelta
 
 
+# ⏰ FAST + INTERLEAVED TIME SLOT GENERATION
 def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
     slots = []
 
-    STUDY_BLOCK = 50
+    STUDY_BLOCK = 90   # 🔥 increased for performance
     BREAK_BLOCK = 10
-    MIN_BLOCK = 20
 
-    # 🔥 continuous mode (days = 0 case)
-    if hours_per_day is None:
+    subjects = list(schedule.keys())
+    remaining = schedule.copy()
+
+    total_remaining = sum(remaining.values())
+
+    # 🔥 CONTINUOUS MODE (days = 0)
+    if days == 0 or hours_per_day is None:
         current = datetime.strptime(start_time, "%H:%M")
 
-        for sub, minutes in schedule.items():
-            remaining = minutes
+        while total_remaining > 0:
+            for sub in subjects:
+                if remaining[sub] <= 0:
+                    continue
 
-            while remaining > 0:
-                chunk = STUDY_BLOCK if remaining >= STUDY_BLOCK else remaining
-
-                if chunk < MIN_BLOCK:
-                    break
+                chunk = min(STUDY_BLOCK, remaining[sub])
 
                 end = current + timedelta(minutes=chunk)
 
@@ -30,65 +33,66 @@ def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
                 })
 
                 current = end + timedelta(minutes=BREAK_BLOCK)
-                remaining -= chunk
+
+                remaining[sub] -= chunk
+                total_remaining -= chunk
+
+                if total_remaining <= 0:
+                    break
 
         return slots
 
-    # 🔥 day-based mode
-    total_daily_minutes = hours_per_day * 60
-    subjects = list(schedule.items())
-    subject_index = 0
-
+    # 🔥 DAY-BASED MODE (INTERLEAVED)
     for day in range(1, days + 1):
         current = datetime.strptime(start_time, "%H:%M")
-        used_today = 0
+        daily_limit = hours_per_day * 60
+        used = 0
 
-        while used_today < total_daily_minutes and subject_index < len(subjects):
+        while used < daily_limit and total_remaining > 0:
+            for sub in subjects:
+                if remaining[sub] <= 0:
+                    continue
 
-            sub, remaining = subjects[subject_index]
+                chunk = min(STUDY_BLOCK, remaining[sub])
 
-            if remaining <= 0:
-                subject_index += 1
-                continue
+                if used + chunk > daily_limit:
+                    break
 
-            chunk = STUDY_BLOCK if remaining >= STUDY_BLOCK else remaining
+                end = current + timedelta(minutes=chunk)
 
-            if chunk < MIN_BLOCK:
-                subject_index += 1
-                continue
+                slots.append({
+                    "day": day,
+                    "subject": sub,
+                    "start": current.strftime("%H:%M"),
+                    "end": end.strftime("%H:%M")
+                })
 
-            if used_today + chunk > total_daily_minutes:
-                break
+                current = end + timedelta(minutes=BREAK_BLOCK)
 
-            end = current + timedelta(minutes=chunk)
+                remaining[sub] -= chunk
+                total_remaining -= chunk
+                used += chunk + BREAK_BLOCK
 
-            slots.append({
-                "day": day,
-                "subject": sub,
-                "start": current.strftime("%H:%M"),
-                "end": end.strftime("%H:%M")
-            })
-
-            current = end + timedelta(minutes=BREAK_BLOCK)
-            used_today += chunk + BREAK_BLOCK
-
-            subjects[subject_index] = (sub, remaining - chunk)
+                if total_remaining <= 0:
+                    break
 
     return slots
 
 
+# 🧠 SCORE CALCULATION
 def calculate_score(schedule, priorities):
     weight_map = {"high": 3, "medium": 2, "low": 1}
 
     if len(set(priorities.values())) == 1:
         return 85
 
-    actual = sum(schedule[s] * weight_map[priorities.get(s, "medium")] for s in schedule)
+    actual = sum(schedule[s] * weight_map.get(priorities.get(s, "medium"), 2) for s in schedule)
     max_score = sum(schedule[s] * 3 for s in schedule)
 
     return int((actual / max_score) * 100) if max_score else 0
 
 
+# 📆 DAY-WISE SPLIT
 def split_across_days(schedule, days):
     if days == 0:
         return None
@@ -100,20 +104,26 @@ def split_across_days(schedule, days):
     items = list(schedule.items())
 
     for day in range(1, days + 1):
-        label = "🧠 Deep Focus" if day == 1 else "🔁 Revision Focus" if day == days else "⚖️ Balanced Learning"
+
+        if day == 1:
+            label = "🧠 Deep Focus"
+        elif day == days:
+            label = "🔁 Revision Focus"
+        else:
+            label = "⚖️ Balanced Learning"
+
         key = f"Day {day} ({label})"
         day_plan[key] = {}
 
         remaining = per_day
 
-        for i, (sub, time) in enumerate(items):
+        for i in range(len(items)):
+            sub, time = items[i]
+
             if time <= 0:
                 continue
 
             portion = min(time, remaining)
-
-            if portion < 20:
-                continue
 
             day_plan[key][sub] = portion
             items[i] = (sub, time - portion)
@@ -126,22 +136,26 @@ def split_across_days(schedule, days):
     return day_plan
 
 
+# 🚀 MAIN SCHEDULER
 def generate_schedule(total_hours, subjects, priorities, days=0, hours_per_day=None):
-    total_minutes = total_hours * 60
+    total_minutes = int(total_hours * 60)
 
     weight_map = {"high": 3, "medium": 2, "low": 1}
-    subjects = [s.strip() for s in subjects]
+    subjects = [s.strip().upper() for s in subjects]
 
     weights = [weight_map.get(priorities.get(s, "medium"), 2) for s in subjects]
     total_weight = sum(weights) or 1
 
+    # 📊 ALLOCATION
     schedule = {
         subjects[i]: int((weights[i] / total_weight) * total_minutes)
         for i in range(len(subjects))
     }
 
+    # ⏸ BREAK TIME
     break_time = total_hours * 5
 
+    # 🔁 REVISION TIME
     if total_hours >= 4:
         revision = int(0.15 * total_minutes)
     elif total_hours >= 2:
