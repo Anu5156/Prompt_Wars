@@ -1,4 +1,6 @@
-my_credentials.json
-token.json
 __pycache__/
+*.pyc
+token.json
+my_credentials.json
 
+*.pdf
