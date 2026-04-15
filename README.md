@@ -85,6 +85,8 @@ The assistant uses layered decision-making:
    - Timetable  
    - Efficiency score  
    - Calendar events  
+   - Study Analytics
+   
 
 ---
 
