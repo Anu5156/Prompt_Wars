@@ -28,7 +28,7 @@ def generate_pdf(result):
     pdf.set_font("Arial", size=10)
 
     for slot in result["time_slots"]:
-        day = str(slot.get("day", "-"))
+        day = f"Day {slot.get('day', '-')}"
         start = slot["start"]
         end = slot["end"]
         subject = slot["subject"]
@@ -65,7 +65,7 @@ st.caption("AI-powered personalized study scheduling")
 st.divider()
 
 # 📥 INPUT SECTION
-# 📥 INPUT SECTION
+
 st.subheader("📥 Input Details")
 
 col1, col2, col3 = st.columns(3)
@@ -204,19 +204,18 @@ if "result" in st.session_state:
     for slot in result["time_slots"]:
         if "day" in slot:
             table_data.append({
-                "Day": slot["day"],
+                "Day": f"Day {slot['day']}",
                 "Start": slot["start"],
                 "End": slot["end"],
                 "Subject": slot["subject"]
-            })
-        else:
-            table_data.append({
-                "Day": "-",
-                "Start": slot["start"],
-                "End": slot["end"],
-                "Subject": slot["subject"]
-            })
-
+        })
+    else:
+        table_data.append({
+            "Day": "-",
+            "Start": slot["start"],
+            "End": slot["end"],
+            "Subject": slot["subject"]
+        })
     df = pd.DataFrame(table_data)
 
     st.dataframe(df, use_container_width=True)
