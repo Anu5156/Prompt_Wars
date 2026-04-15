@@ -1,19 +1,26 @@
 from datetime import datetime, timedelta
+import logging
+
+# 🔧 Logging configuration
+logging.basicConfig(level=logging.INFO)
 
 
 # ⏰ FAST + INTERLEAVED TIME SLOT GENERATION
 def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
+    logging.info("Generating time slots...")
+
     slots = []
 
-    STUDY_BLOCK = 90   # 🔥 increased for performance
+    STUDY_BLOCK = 90
     BREAK_BLOCK = 10
+    MIN_BLOCK = 30   # 🔥 Minimum useful study duration
 
     subjects = list(schedule.keys())
     remaining = schedule.copy()
 
     total_remaining = sum(remaining.values())
 
-    # 🔥 CONTINUOUS MODE (days = 0)
+    # 🔥 CONTINUOUS MODE
     if days == 0 or hours_per_day is None:
         current = datetime.strptime(start_time, "%H:%M")
 
@@ -23,6 +30,9 @@ def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
                     continue
 
                 chunk = min(STUDY_BLOCK, remaining[sub])
+                chunk = max(chunk, MIN_BLOCK)
+
+                logging.debug(f"{sub} → {chunk} mins")
 
                 end = current + timedelta(minutes=chunk)
 
@@ -42,7 +52,7 @@ def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
 
         return slots
 
-    # 🔥 DAY-BASED MODE (INTERLEAVED)
+    # 🔥 DAY-BASED MODE
     for day in range(1, days + 1):
         current = datetime.strptime(start_time, "%H:%M")
         daily_limit = hours_per_day * 60
@@ -57,10 +67,15 @@ def generate_time_slots(schedule, days, hours_per_day, start_time="09:00"):
 
                 if used + chunk > daily_limit:
                     chunk = daily_limit - used
-                
+
+                if chunk > 0:
+                    chunk = max(chunk, MIN_BLOCK)
+
                 if chunk <= 0:
                     used = daily_limit
                     break
+
+                logging.debug(f"Day {day}: {sub} → {chunk} mins")
 
                 end = current + timedelta(minutes=chunk)
 
@@ -142,6 +157,8 @@ def split_across_days(schedule, days):
 
 # 🚀 MAIN SCHEDULER
 def generate_schedule(total_hours, subjects, priorities, days=0, hours_per_day=None):
+    logging.info(f"Generating schedule for subjects: {subjects}")
+
     total_minutes = int(total_hours * 60)
 
     weight_map = {"high": 3, "medium": 2, "low": 1}

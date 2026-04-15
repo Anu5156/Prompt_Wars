@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-red)
+![Status](https://img.shields.io/badge/Status-Active-green)
+
 # 🧠 Smart Study Planner Assistant
 
 🚀 Built with Streamlit + Google Calendar API + Intelligent Scheduling Logic  
