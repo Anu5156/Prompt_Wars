@@ -86,7 +86,7 @@ The assistant uses layered decision-making:
 
 ## 🌐 Live Demo
 
-🔗 https://your-streamlit-app-link
+🔗 https://promptwars-r86ripmbuk27tyamz5jx62.streamlit.app/
 
 ---
 
