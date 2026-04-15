@@ -140,6 +140,9 @@ project-root/
 ├── requirements.txt           # Dependencies
 ├── README.md
 │
+├── tests/                     # 🧪 Testing folder
+│   └── test_scheduler.py      # Unit tests for scheduler
+│
 └── assets/
     └── screenshots/
         ├── input.png
