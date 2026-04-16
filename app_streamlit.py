@@ -31,8 +31,8 @@ def generate_pdf(result):
     pdf.set_font("Arial", size=10)
 
     for slot in result["time_slots"]:
-        day = f"Day {slot.get('day', '-')}"
-        pdf.cell(30, 10, day, 1)
+        day = slot.get('day', 'Full Plan')
+        pdf.cell(30, 10, str(day), 1)
         pdf.cell(40, 10, slot["start"], 1)
         pdf.cell(40, 10, slot["end"], 1)
         pdf.cell(60, 10, slot["subject"], 1)
@@ -128,10 +128,19 @@ if st.button("🚀 Generate Study Plan", use_container_width=True):
 
     priorities = {subjects[i]: priorities_list[i] for i in range(len(subjects))}
 
-    total_minutes = (hours * 60) + minutes if days == 0 else (days * hours * 60) + minutes
+    # ✅ FIXED TIME CALCULATION
+    if days == 0:
+        total_minutes = (hours * 60) + minutes
+    else:
+        total_minutes = days * ((hours * 60) + minutes)
 
     if total_minutes <= 0:
         st.error("⚠️ Time must be greater than 0")
+        st.stop()
+
+    # ✅ EXTRA VALIDATION
+    if days > 0 and hours <= 0:
+        st.error("⚠️ Hours per day must be greater than 0")
         st.stop()
 
     try:
@@ -162,7 +171,8 @@ if "result" in st.session_state:
         columns=["Subject", "Minutes"]
     )
 
-    st.bar_chart(df_chart.set_index("Subject"))
+    # ✅ GREEN BAR CHART
+    st.bar_chart(df_chart.set_index("Subject"), color="#2ecc71")
 
     # 🤖 AI INSIGHT
     top_subject = max(result["study_plan"], key=result["study_plan"].get)
@@ -183,7 +193,7 @@ if "result" in st.session_state:
 
     for slot in result["time_slots"]:
         table_data.append({
-            "Day": f"Day {slot['day']}" if "day" in slot else "Full Plan",
+            "Day": slot["day"] if "day" in slot else "Full Plan",  # ✅ FIXED
             "Start": slot["start"],
             "End": slot["end"],
             "Subject": slot["subject"]

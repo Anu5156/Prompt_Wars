@@ -224,7 +224,7 @@ def generate_schedule(
     total_minutes = int(total_hours * 60)
 
     weight_map = {"high": 3, "medium": 2, "low": 1}
-    subjects = [s.strip().upper() for s in subjects]
+    priorities = {k.upper(): v for k, v in priorities.items()}
 
     weights = [
         weight_map.get(priorities.get(s, "medium"), 2)
