@@ -4,6 +4,15 @@
 
 # 🧠 Smart Study Planner Assistant
 
+## 🎯 Problem Solved
+
+Students struggle to allocate study time efficiently and prioritize subjects effectively.
+
+## 💡 Solution
+
+This application intelligently distributes study time based on subject priority and availability,
+generating optimized study plans, timetables, and actionable insights.
+
 🚀 Built with Streamlit + Google Calendar API + Intelligent Scheduling Logic  
 
 An AI-powered intelligent assistant that dynamically generates personalized study schedules based on time availability, subject priority, and user intent — with real-time Google Calendar integration.
@@ -87,9 +96,7 @@ The assistant uses layered decision-making:
    - Calendar events  
    - Study Analytics
    
-
 ---
-
 ## 🌐 Live Demo
 
 🔗 https://promptwars-r86ripmbuk27tyamz5jx62.streamlit.app/
@@ -154,24 +161,40 @@ project-root/
 ## ▶️ How to Run
 1. Install dependencies
 pip install -r requirements.txt
+
+
 ## 2. Run the application
 streamlit run app_streamlit.py
+
+
 ## 🔐 Security Considerations
 Credentials (my_credentials.json, token.json) are excluded via .gitignore
 No sensitive data is stored in the repository
 OAuth authentication ensures secure access
+
+
 ## ⚡ Performance & Efficiency
 Lightweight implementation (<1MB repository)
 No heavy frameworks
 Optimized scheduling algorithm
 Fast execution
-## 🧪 Testing & Validation
-Tested for:
 
-Manual input scenarios
-AI-based natural language input
-Edge cases (low time, equal priority)
-Google Calendar integration
+## 🧪 Testing
+- Unit tests implemented using pytest
+- Covers:
+  - Schedule generation
+  - Priority distribution
+  - Edge cases (zero time)
+  - Time slot structure
+  - All tests passing successfully (5/5)
+
+## ♿ Accessibility
+
+- Clear input labels and instructions
+- Structured layout for readability
+- User-friendly interface design
+- Error handling and validation messages
+- Simple and intuitive navigation
 
 ## 🌍 Real-World Impact
 This project helps students:
