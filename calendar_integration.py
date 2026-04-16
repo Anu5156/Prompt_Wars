@@ -1,87 +1,122 @@
 from datetime import datetime, timedelta
-import os
+import os.path
+import logging
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# Google Calendar API scope
+# 🔧 Logging setup
+logging.basicConfig(level=logging.INFO)
+
+# 🔐 Google Calendar API scope
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
+# 🎨 Priority → Color mapping (Google Calendar color IDs)
+PRIORITY_COLORS = {
+    "high": "11",    # red
+    "medium": "5",   # yellow
+    "low": "2"       # green
+}
 
-def authenticate():
+
+def get_calendar_service():
+    """
+    Authenticates user and returns Google Calendar service.
+    """
+
     creds = None
 
-    # Debug: show current files
-    print("\n📂 Files in current directory:", os.listdir())
-
-    # Load existing token
+    # 🔁 Load existing token
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
 
-    # If no valid credentials, login
+    # 🔐 If not valid → authenticate
     if not creds or not creds.valid:
-        if not os.path.exists('my_credentials.json'):
-            raise FileNotFoundError(
-                "❌ 'my_credentials.json' not found in project folder."
-            )
-
         flow = InstalledAppFlow.from_client_secrets_file(
             'my_credentials.json', SCOPES
         )
         creds = flow.run_local_server(port=0)
 
-        # Save token for reuse
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
-    return creds
+    service = build('calendar', 'v3', credentials=creds)
+    return service
 
 
-def create_events(schedule):
-    try:
-        creds = authenticate()
-        service = build('calendar', 'v3', credentials=creds)
+def create_events(time_slots):
+    """
+    Creates Google Calendar events for given time slots.
 
-        start_time = datetime.now()
+    Args:
+        time_slots (list): List of slots with subject, start, end, day
 
-        print("\n📅 Creating events in Google Calendar...\n")
+    Returns:
+        int: Number of events successfully created
+    """
 
-        for subject, minutes in schedule.items():
-            minutes = int(minutes)
+    logging.info("Creating calendar events...")
 
-            end_time = start_time + timedelta(minutes=minutes)
+    service = get_calendar_service()
 
-            # 🔥 FINAL EVENT STRUCTURE WITH FIXED NOTIFICATION
+    base_date = datetime.now().date()
+    event_count = 0
+
+    for slot in time_slots:
+        try:
+            # 🧠 Safe day handling
+            day_value = slot.get("day", "Day 1")
+
+            if isinstance(day_value, str) and "Day" in day_value:
+                day_num = int(day_value.split()[-1])
+            else:
+                day_num = 1
+
+            event_date = base_date + timedelta(days=day_num - 1)
+
+            # ⏰ Time parsing
+            start_time = datetime.strptime(slot["start"], "%H:%M").time()
+            end_time = datetime.strptime(slot["end"], "%H:%M").time()
+
+            start_datetime = datetime.combine(event_date, start_time).isoformat()
+            end_datetime = datetime.combine(event_date, end_time).isoformat()
+
+            subject = slot["subject"]
+
+            # 🎯 Detect priority from subject (default = medium)
+            # (You can improve this later if you pass priorities)
+            priority = "medium"
+            color_id = PRIORITY_COLORS.get(priority, "5")
+
+            # 📅 Event object
             event = {
-                'summary': f'Study: {subject}',
+                'summary': f"📘 Study: {subject}",
+                'description': f"Scheduled study session for {subject}",
                 'start': {
-                    'dateTime': start_time.isoformat(),
+                    'dateTime': start_datetime,
                     'timeZone': 'Asia/Kolkata',
                 },
                 'end': {
-                    'dateTime': end_time.isoformat(),
+                    'dateTime': end_datetime,
                     'timeZone': 'Asia/Kolkata',
                 },
+                'colorId': color_id,
                 'reminders': {
                     'useDefault': False,
                     'overrides': [
-                        {'method': 'popup', 'minutes': 0},  # ✅ exact start notification
+                        {'method': 'popup', 'minutes': 10},
+                        {'method': 'email', 'minutes': 30},
                     ],
                 },
             }
 
-            service.events().insert(
-                calendarId='primary',
-                body=event
-            ).execute()
+            # 🚀 Insert event
+            service.events().insert(calendarId='primary', body=event).execute()
+            event_count += 1
 
-            print(f"✅ Added: {subject} ({minutes} mins)")
+        except Exception as e:
+            logging.error(f"❌ Error creating event: {e}")
 
-            # Move to next time slot
-            start_time = end_time
-
-        print("\n🎉 All events successfully added to Google Calendar!")
-
-    except Exception as e:
-        print("\n❌ Error creating events:", e)
+    logging.info(f"✅ {event_count} events added to calendar")
+    return event_count

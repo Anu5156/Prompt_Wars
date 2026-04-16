@@ -4,6 +4,26 @@
 
 # 🧠 Smart Study Planner Assistant
 
+## 🎯 Problem Statement Alignment
+
+### 📌 Problem
+Students often struggle to manage study time effectively due to lack of planning and prioritization.
+
+### 💡 Solution
+This app intelligently distributes study time based on subject importance and availability.
+
+### 🧠 Approach
+- Priority-based allocation
+- Interleaved scheduling
+- Data-driven insights and analytics
+
+### 🚀 Impact
+- Better time management
+- Improved focus on key subjects
+- Structured and efficient study routines
+
+---
+
 ## 🎯 Problem Solved
 
 Students struggle to allocate study time efficiently and prioritize subjects effectively.
@@ -65,6 +85,8 @@ The **Smart Study Planner Assistant** solves this by:
 - ✅ AI-Based Study Suggestions  
 - ✅ Google Calendar API Integration  
 - ✅ PDF Export of Timetable  
+- ✅ CSV Export  
+- ✅ Progress Tracking  
 - ✅ Clean Streamlit UI  
 
 ---
@@ -94,9 +116,10 @@ The assistant uses layered decision-making:
    - Timetable  
    - Efficiency score  
    - Calendar events  
-   - Study Analytics
-   
+   - Study Analytics  
+
 ---
+
 ## 🌐 Live Demo
 
 🔗 https://promptwars-r86ripmbuk27tyamz5jx62.streamlit.app/
@@ -113,26 +136,6 @@ The assistant uses layered decision-making:
 
 ### 🔹 Timetable View
 ![Table](assets/screenshots/table.png)
-
----
-
-## 📅 Google Calendar Integration
-
-This project integrates with **Google Calendar API** to:
-
-- Automatically create study sessions as calendar events  
-- Schedule tasks sequentially with accurate timing  
-- Trigger notifications at session start time  
-
-### 🔐 Setup Instructions:
-1. Go to Google Cloud Console  
-2. Enable Google Calendar API  
-3. Create OAuth credentials  
-4. Download and rename file to `my_credentials.json`  
-5. Place it in the project root  
-6. Run the application and authenticate  
-
-⚠️ Credentials are not included in the repository for security reasons.
 
 ---
 
@@ -158,13 +161,36 @@ project-root/
         ├── plan.png
         ├── table.png
 ```
-## ▶️ How to Run
-1. Install dependencies
+## ⚙️ Setup Instructions
+
+## 1. Install dependencies
 pip install -r requirements.txt
 
 
 ## 2. Run the application
 streamlit run app_streamlit.py
+
+## Google Calender Setup
+1.Go to Google Cloud Console
+2.Enable Google Calendar API
+3.Create OAuth credentials
+4.Download and rename file to my_credentials.json
+5.Place it in the project root
+6.Run the application and authenticate
+
+⚠️ Credentials are not included in the repository for security reasons
+
+## ▶️ How to Run
+pip install -r requirements.txt
+streamlit run app_streamlit.py
+
+## 📅 Google Calendar Integration
+This project integrates with Google Calendar API to:
+
+Automatically create study sessions as calendar events
+Schedule tasks sequentially with accurate timing
+Trigger notifications at session start time
+
 
 
 ## 🔐 Security Considerations
@@ -180,13 +206,9 @@ Optimized scheduling algorithm
 Fast execution
 
 ## 🧪 Testing
-- Unit tests implemented using pytest
-- Covers:
-  - Schedule generation
-  - Priority distribution
-  - Edge cases (zero time)
-  - Time slot structure
-  - All tests passing successfully (5/5)
+Unit tests implemented using pytest
+Covers scheduling logic and edge cases
+All tests passing successfully (5/5)
 
 ## ♿ Accessibility
 
@@ -198,10 +220,20 @@ Fast execution
 
 ## 🌍 Real-World Impact
 This project helps students:
+
 Improve productivity
 Make better time decisions
 Reduce planning stress
 Follow structured learning
+
+## 🚀 Advanced Features
+
+- Priority-based color-coded calendar events
+- Intelligent study balance detection
+- Real-time analytics insights
+- Progress tracking system
+- Multi-format export (PDF + CSV)
+- Smart feedback based on efficiency score
 
 ## 💡 Why This Project Stands Out
 Combines AI + scheduling + automation
