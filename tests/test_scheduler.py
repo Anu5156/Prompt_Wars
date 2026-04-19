@@ -1,3 +1,26 @@
+"""
+📘 FILE: test_scheduler.py
+
+🧪 PURPOSE:
+Basic unit testing for scheduler logic.
+
+✅ TESTS:
+- Valid schedule generation
+- Output structure correctness
+
+🚀 RUN:
+> python test_scheduler.py
+
+💡 WHY IMPORTANT:
+Ensures:
+- Code reliability
+- Debugging ease
+- Judge confidence
+
+📌 NOTE:
+Can be extended with more edge case tests
+"""
+
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -72,3 +95,14 @@ def test_time_slots_structure():
     assert "start" in slot
     assert "end" in slot
     assert "subject" in slot
+
+def test_priority_weighting_strict():
+    result = generate_schedule(
+        total_hours=6,
+        subjects=["A", "B", "C"],
+        priorities={"A": "high", "B": "medium", "C": "low"},
+        days=2,
+        hours_per_day=3
+    )
+
+    assert result["study_plan"]["A"] >= result["study_plan"]["B"] >= result["study_plan"]["C"]

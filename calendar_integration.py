@@ -1,3 +1,32 @@
+"""
+📘 FILE: calendar_integration.py
+
+📅 PURPOSE:
+Integrates study schedule with Google Calendar.
+
+🔗 FUNCTION:
+create_events(time_slots)
+
+📥 INPUT:
+Generated timetable
+
+📤 OUTPUT:
+Creates calendar events
+
+⚙️ REQUIREMENTS:
+- Google API credentials
+- OAuth setup
+
+💡 BENEFIT:
+- Real-world usability
+- Automated reminders
+
+🚀 FUTURE:
+Can support:
+- Notifications
+- Sync across devices
+"""
+
 from datetime import datetime, timedelta
 import os.path
 import logging
@@ -91,26 +120,26 @@ def create_events(time_slots):
 
             # 📅 Event object
             event = {
-                'summary': f"📘 Study: {subject}",
-                'description': f"Scheduled study session for {subject}",
-                'start': {
-                    'dateTime': start_datetime,
-                    'timeZone': 'Asia/Kolkata',
-                },
-                'end': {
-                    'dateTime': end_datetime,
-                    'timeZone': 'Asia/Kolkata',
-                },
-                'colorId': color_id,
-                'reminders': {
-                    'useDefault': False,
-                    'overrides': [
-                        {'method': 'popup', 'minutes': 10},
-                        {'method': 'email', 'minutes': 30},
-                    ],
-                },
-            }
-
+            'summary': slot['subject'],
+            'start': {
+                'dateTime': start_time.isoformat(),
+                'timeZone': 'Asia/Kolkata',
+            },
+            'end': {
+                'dateTime': end_time.isoformat(),
+                'timeZone': 'Asia/Kolkata',
+            },
+            # 🔥 ADD THIS BLOCK
+            "reminders": {
+                "useDefault": False,
+                "overrides": [
+                    {"method": "popup", "minutes": 60},
+                    {"method": "popup", "minutes": 30},
+                    {"method": "popup", "minutes": 10},
+                    {"method": "popup", "minutes": 1}
+    ]
+}
+        }
             # 🚀 Insert event
             service.events().insert(calendarId='primary', body=event).execute()
             event_count += 1

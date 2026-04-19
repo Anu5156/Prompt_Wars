@@ -1,297 +1,561 @@
+"""
+📘 FILE: app_streamlit.py
+
+🧠 PURPOSE:
+Main UI for Adaptive AI Study Planner
+
+✨ FEATURES:
+- AI parsing
+- Smart scheduling
+- Green analytics graph
+- Timetable + CSV + PDF
+- Google Calendar integration
+- Conversational AI (WOW)
+"""
+
 import streamlit as st
 import pandas as pd
-from scheduler import generate_schedule
-from calendar_integration import create_events
+import altair as alt
 from fpdf import FPDF
-from collections import defaultdict
+import random
 
-# ⚙️ PAGE CONFIG
-st.set_page_config(
-    page_title="Accessible Smart Study Planner",
-    page_icon="🧠",
-    layout="wide"
-)
+from scheduler import generate_schedule, reschedule_plan
+from calendar_integration import create_events
+from ai_optimizer import improve_plan, evaluate_plan, chat_with_ai
+from prompt_parser import extract_subjects_and_priority
+from motivation_engine import generate_motivation
 
-# 📄 PDF GENERATION
-def generate_pdf(result):
+
+# ⚙️ CONFIG
+st.set_page_config(page_title="Adaptive AI Study Planner", layout="wide")
+
+# ==========================
+# 📄 PDF
+# ==========================
+def generate_pdf(dataframe):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=10)
 
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, "Smart Study Timetable", ln=True, align='C')
+    # 🔥 HEADER
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(200, 10, "Personal Study Planner", ln=True, align="C")
+
     pdf.ln(5)
 
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(30, 10, "Day", 1)
-    pdf.cell(40, 10, "Start", 1)
-    pdf.cell(40, 10, "End", 1)
-    pdf.cell(60, 10, "Subject", 1)
+    
+
+    # 🔥 TABLE HEADER
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(40, 8, "Day", border=1)
+    pdf.cell(40, 8, "Time", border=1)
+    pdf.cell(110, 8, "Subject", border=1)
     pdf.ln()
 
     pdf.set_font("Arial", size=10)
 
-    for slot in result["time_slots"]:
-        day = slot.get('day', 'Full Plan')
-        pdf.cell(30, 10, str(day), 1)
-        pdf.cell(40, 10, slot["start"], 1)
-        pdf.cell(40, 10, slot["end"], 1)
-        pdf.cell(60, 10, slot["subject"], 1)
+    def clean_text(text):
+        return text.encode("latin-1", "ignore").decode("latin-1")
+
+    for _, row in dataframe.iterrows():
+        pdf.cell(40, 8, clean_text(str(row["day"])), border=1)
+        pdf.cell(40, 8, f"{row['start']} - {row['end']}", border=1)
+        pdf.cell(110, 8, clean_text(row["subject"]), border=1)
         pdf.ln()
+
+    # 🔥 MOTIVATION
+    pdf.ln(10)
+    pdf.set_font("Arial", "I", 10)
+
+    slogans = [
+        "Stay consistent!",
+        "Push your limits!",
+        "Discipline beats motivation!",
+        "Focus -> Success!"
+        ]
+
+    pdf.cell(200, 10, random.choice(slogans), ln=True)
 
     file_path = "study_plan.pdf"
     pdf.output(file_path)
+
     return file_path
 
 
-# 🧠 TITLE
-st.title("🧠 Smart Study Planner")
-st.caption("This tool helps you create structured and optimized study schedules easily.")
+def generate_ics(time_slots, start_date):
+    from datetime import datetime, timedelta
 
-# 🎯 PROBLEM ALIGNMENT
+    def clean_text(text):
+        return text.encode("ascii", "ignore").decode()
+
+    base_date = datetime.combine(start_date, datetime.min.time())
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//AI Study Planner//EN"
+    ]
+
+    for slot in time_slots:
+        day_num = int(slot["day"].split()[1])
+
+        start_dt = base_date + timedelta(days=day_num - 1)
+        end_dt = base_date + timedelta(days=day_num - 1)
+
+        start_time = datetime.strptime(slot["start"], "%H:%M")
+        end_time = datetime.strptime(slot["end"], "%H:%M")
+
+        start_final = start_dt.replace(hour=start_time.hour, minute=start_time.minute)
+        end_final = end_dt.replace(hour=end_time.hour, minute=end_time.minute)
+
+        lines.extend([
+            "BEGIN:VEVENT",
+            f"SUMMARY:{clean_text(slot['subject'])}",
+            f"DTSTART:{start_final.strftime('%Y%m%dT%H%M%S')}",
+            f"DTEND:{end_final.strftime('%Y%m%dT%H%M%S')}",
+            "END:VEVENT"
+        ])
+
+    lines.append("END:VCALENDAR")
+
+    file_path = "study_plan.ics"
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    return file_path
+
+# ==========================
+# 🎨 PREMIUM UI STYLING
+# ==========================
 st.markdown("""
-### 🎯 Problem
-Students struggle to effectively manage study time and prioritize subjects.
+<style>
 
-### 💡 Solution
-This application intelligently allocates study time based on subject priority.
+/* Background */
+.stApp {
+    background: linear-gradient(135deg, #0f172a, #020617);
+    color: white;
+}
 
-### 🧠 Approach
-- Priority-based allocation
-- Interleaved scheduling
-- Optimized learning efficiency
-""")
+/* Titles */
+h1, h2, h3 {
+    color: #f8fafc;
+    font-weight: 700;
+}
+
+/* Glass card effect */
+.block-container {
+    padding-top: 2rem;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 0.6em 1.2em;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.stButton > button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+/* Input boxes */
+.stTextInput input, .stNumberInput input {
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background-color: #020617;
+    color: white;
+}
+
+/* Dataframe */
+.css-1d391kg {
+    background-color: rgba(255,255,255,0.05);
+    border-radius: 10px;
+}
+
+/* Success box */
+.stAlert {
+    border-radius: 12px;
+}
+
+/* Chat box */
+.stChatMessage {
+    border-radius: 12px;
+    padding: 10px;
+}
+
+/* Divider */
+hr {
+    border: 1px solid #1e293b;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<h1 style='text-align:center; font-size:40px;'>
+🧠 Adaptive AI Study Planner
+</h1>
+<p style='text-align:center; color:#94a3b8;'>
+Energy-based • AI Optimized • Adaptive Scheduling
+</p>
+""", unsafe_allow_html=True)
 
 st.divider()
 
-# 📘 HOW TO USE
-st.markdown("""
-### 📘 How to Use
 
-1. Enter subjects (comma separated)
-2. Enter priorities (high/medium/low)
-3. Set available time
-4. Click Generate Study Plan
-""")
+# ==========================
+# 🔁 MODE SELECTION
+# ==========================
+mode = st.radio("Choose Mode", ["Manual Input", "AI Input"])
 
-# 📥 INPUT
-with st.container():
-    st.markdown("## 📥 Input Details")
-    st.caption("Provide your study preferences below")
+# ==========================
+# 📥 INPUT SECTION
+# ==========================
+st.subheader("📥 Input Details")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    days = st.number_input("Days (0 = total time)", min_value=0, value=0)
+    days = st.number_input("Days", min_value=0, value=0)
 
 with col2:
-    hours = st.number_input("Hours per day", min_value=0, value=0, help="Number of study hours each day")
+    hours = st.number_input("Hours per day", min_value=0, value=0)
 
 with col3:
-    minutes = st.number_input("Minutes", min_value=0, value=0)
+    minutes = st.number_input("Extra Minutes", min_value=0, value=0)
 
-st.caption("Enter subjects and priorities carefully (comma-separated)")
+with col4:
+    from datetime import date
+    start_date = st.date_input("📅 Start Date", value=date.today())
 
-subjects_input = st.text_input(
-    "Subjects (comma separated)",
-    placeholder="TOC, DBMS, FSD",
-    help="Example: TOC, DBMS, FSD"
-)
+# ==========================
+# 🟦 MANUAL MODE
+# ==========================
+if mode == "Manual Input":
+    st.text_input("Subjects (comma separated)", key="subjects_input")
+    st.text_input("Priorities (high/medium/low)", key="priority_input")
 
-priority_input = st.text_input(
-    "Priorities (high/medium/low)",
-    placeholder="high, medium, low",
-    help="Enter one priority per subject in the same order"
-)
+# ==========================
+# 🧠 AI MODE
+# ==========================
+elif mode == "AI Input":
 
-# 🔥 EMPTY STATE
-if not subjects_input and not priority_input:
-    st.info("👆 Enter subjects and priorities to see suggestions")
+    nl_input = st.text_area(
+        "Describe your study plan",
+        placeholder="I have 4 hours. TOC is important, DBMS is optional"
+    )
 
-# 💡 SUGGESTION ENGINE
-if subjects_input and priority_input:
-    subjects_temp = [s.strip().upper() for s in subjects_input.split(",")]
-    priorities_temp = [p.strip().lower() for p in priority_input.split(",")]
+    if st.button("✨ Parse with AI"):
+        s, p = extract_subjects_and_priority(nl_input)
 
-    if len(subjects_temp) == len(priorities_temp):
-        weight_map = {"high": 3, "medium": 2, "low": 1}
-        total_weight = sum(weight_map.get(p, 2) for p in priorities_temp)
-
-        if total_weight > 0:
-            st.info("💡 Suggested Time Distribution")
-            for i, sub in enumerate(subjects_temp):
-                percent = (weight_map.get(priorities_temp[i], 2) / total_weight) * 100
-                st.write(f"{sub} → {int(percent)}%")
-
-st.divider()
-
-# 🔥 STATUS MESSAGE
-if "result" not in st.session_state:
-    st.warning("⚠️ Please enter inputs and generate a study plan")
-else:
-    st.success("✅ Study plan generated successfully")
-
-# 🚀 GENERATE
-if st.button("🚀 Generate Study Plan", use_container_width=True):
-
-    if not subjects_input.strip():
-        st.error("⚠️ Subjects cannot be empty")
-        st.stop()
-
-    if not priority_input.strip():
-        st.error("⚠️ Priorities cannot be empty")
-        st.stop()
-
-    subjects = [s.strip().upper() for s in subjects_input.split(",")]
-    priorities_list = [p.strip().lower() for p in priority_input.split(",")]
-
-    if len(subjects) != len(priorities_list):
-        st.error("⚠️ Subjects and priorities must match in count (e.g., 3 subjects → 3 priorities)")
-        st.stop()
-
-    priorities = {subjects[i]: priorities_list[i] for i in range(len(subjects))}
-
-    # ⏳ LOADING STATE
-    with st.spinner("⏳ Generating your optimized study plan..."):
-
-        if days == 0:
-            total_minutes = (hours * 60) + minutes
+        if not s:
+            st.warning("⚠️ Could not detect subjects.")
         else:
-            total_minutes = days * ((hours * 60) + minutes)
+            st.success("✅ Parsed Successfully")
+            st.write("Subjects:", s)
+            st.write("Priorities:", p)
 
-        if total_minutes <= 0:
-            st.error("⚠️ Time must be greater than 0")
-            st.stop()
+            st.session_state["subjects_input"] = ",".join(s)
+            st.session_state["priority_input"] = ",".join(p.values())
 
-        try:
-            result = generate_schedule(total_minutes / 60, subjects, priorities, days, hours)
-            st.session_state["result"] = result
-            st.success("✅ Plan Generated!")
-        except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-            st.stop()
+# ==========================
+# 🚀 GENERATE PLAN
+# ==========================
+if st.button("🚀 Generate Plan", use_container_width=True):
 
+    subjects_value = st.session_state.get("subjects_input", "")
+    priority_value = st.session_state.get("priority_input", "")
+
+    subjects = [s.strip().upper() for s in subjects_value.split(",") if s.strip()]
+    priorities_list = [p.strip().lower() for p in priority_value.split(",") if p.strip()]
+
+    if len(subjects) == 0 or len(priorities_list) == 0:
+        st.error("⚠️ Please provide valid subjects and priorities")
+        st.stop()
+
+    if len(priorities_list) != len(subjects):
+        st.warning("⚠️ Priority mismatch → defaulting to medium")
+        priorities_list = ["medium"] * len(subjects)
+
+    priorities = dict(zip(subjects, priorities_list))
+
+    st.session_state["subjects"] = subjects
+    st.session_state["priorities"] = priorities
+
+    total_hours = (days * (hours + minutes / 60)) if days > 0 else (hours + minutes / 60)
+
+    result = generate_schedule(total_hours, subjects, priorities, days, hours)
+    st.session_state["result"] = result
+
+    st.success("✅ Plan Generated!")
+
+# ==========================
 # 📊 OUTPUT
+# ==========================
 if "result" in st.session_state:
 
     result = st.session_state["result"]
 
-    st.subheader("📊 Overview")
+    st.subheader("📊 Metrics")
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(90deg, #22c55e, #4ade80);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+    ">
+    🚀 Efficiency Score: {result['score']}%
+    </div>
+    """, unsafe_allow_html=True)
+# ==========================
+# 📊 GRAPH (UPGRADED)
+# ==========================
+    st.subheader("📊 Study Distribution (%)")
 
-    # 📖 SUMMARY
-    st.markdown("### 📖 Summary")
-    total_time = sum(result["study_plan"].values())
-    num_subjects = len(result["study_plan"])
-    st.write(f"You will study {num_subjects} subjects with total time {total_time} minutes.")
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Break Time", f"{result['break_time']} mins")
-    col2.metric("Revision Time", f"{result['revision_time']} mins")
-    col3.metric("Efficiency", f"{result['score']}%")
-
-    # 📊 ANALYTICS
-    st.subheader("📊 Study Analytics")
-    st.caption("Bar chart showing time allocated per subject")
-
-    df_chart = pd.DataFrame(
-        list(result["study_plan"].items()),
-        columns=["Subject", "Minutes"]
+    df = pd.DataFrame(
+        list(result["distribution"].items()),
+        columns=["Subject", "Percent"]
     )
 
-    st.bar_chart(df_chart.set_index("Subject"), color="#2ecc71")
+    # 🔥 PRIORITY COLORS
+    color_map = {
+        "high": "#ff4b4b",
+        "medium": "#ffa500",
+        "low": "#4caf50"
+    }
 
-    total_time = sum(result["study_plan"].values())
-    num_subjects = len(result["study_plan"])
+    # 🔥 MAP PRIORITY BASED ON STUDY TIME
+    max_val = max(result["study_plan"].values())
+    min_val = min(result["study_plan"].values())
 
-    st.info(f"📊 Total Study Time: {total_time} mins")
-    st.info(f"📚 Subjects Covered: {num_subjects}")
+    df["Priority"] = df["Subject"].map(result["study_plan"]).apply(
+        lambda x: "high" if x == max_val
+        else "low" if x == min_val
+        else "medium"
+    )
+
+    chart = alt.Chart(df).mark_bar(
+        cornerRadiusTopLeft=6,
+        cornerRadiusTopRight=6,
+        cornerRadius=4
+    ).encode(
+        x=alt.X("Subject", sort="-y"),
+        y=alt.Y("Percent", title="Study %"),
+        color=alt.Color(
+            "Priority",
+            scale=alt.Scale(
+                domain=list(color_map.keys()),
+                range=list(color_map.values())
+            )
+        )
+    ).properties(height=350)
+
+    st.altair_chart(chart, use_container_width=True)
+    # ==========================
+    # 🧠 AI EXPLANATION (WOW)
+    # ==========================
+    st.subheader("🤖 Why this plan works")
 
     top_subject = max(result["study_plan"], key=result["study_plan"].get)
-    st.success(f"🔥 Focus more on: {top_subject}")
+    least_subject = min(result["study_plan"], key=result["study_plan"].get)
 
-    max_time = max(result["study_plan"].values())
-    min_time = min(result["study_plan"].values())
+    st.success(f"""
+    • **{top_subject}** gets highest focus (high priority)  
+    • **{least_subject}** gets balanced time  
+    • High-energy hours → difficult subjects  
+    • Breaks prevent burnout  
 
-    if max_time > 2 * min_time:
-        st.warning("⚠️ Study plan is unbalanced. Consider adjusting priorities.")
-    else:
-        st.success("✅ Well-balanced study plan!")
+    👉 Optimized for **maximum efficiency**
+    """)
 
-    if result["score"] > 85:
-        st.success("🔥 Excellent planning strategy!")
-    elif result["score"] > 60:
-        st.info("👍 Good plan, slight improvements possible.")
-    else:
-        st.warning("⚠️ Consider adjusting priorities for better efficiency.")
+    # ==========================
+    # ⚠️ SMART ALERT
+    # ==========================
+    if result["score"] < 60:
+        st.warning("⚠️ Plan may be inefficient")
+    elif result["score"] > 85:
+        st.success("🔥 Excellent plan!")
 
-    st.divider()
+    # ==========================
+    # 📅 TIMETABLE
+    # ==========================
+    st.subheader("📅 Timetable")
 
-    # 📅 STUDY PLAN
-    st.subheader("📅 Study Plan")
+    df_slots = pd.DataFrame(result["time_slots"])
 
-    for sub, mins in result["study_plan"].items():
-        st.markdown(f"- **{sub}** → {mins} mins")
+    st.dataframe(
+        df_slots.sort_values(by=["day", "start"]),
+        use_container_width=True
+    )
 
-    # 📊 TIMETABLE
-    st.subheader("📊 Timetable")
+    # ==========================
+    # 📄 PDF DOWNLOAD
+    # ==========================
+    st.subheader("📄 Download Timetable")
 
-    table_data = []
+    if st.button("📥 Generate PDF"):
 
-    for slot in result["time_slots"]:
-        table_data.append({
-            "Day": slot.get("day", "Full Plan"),
-            "Start": slot["start"],
-            "End": slot["end"],
-            "Subject": slot["subject"]
-        })
+        pdf_file = generate_pdf(df_slots)
 
-    df = pd.DataFrame(table_data)
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+            label="⬇️ Download PDF",
+            data=f,
+            file_name="study_plan.pdf",
+            mime="application/pdf"
+        )
 
-    if "Day" in df.columns:
-        df = df.sort_values(by=["Day", "Start"])
+    # ==========================
+    # 📊 TIMELINE VIEW (WOW)
+    # ==========================
+    st.subheader("📊 Timeline View")
 
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    st.caption("Tabular view of your study schedule showing day, time, and subject")
+    import pandas as pd
 
-    # 🔥 CSV Export
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("⬇ Download CSV", csv, "study_plan.csv")
+    # 🔥 USE USER SELECTED DATE
+    base_date = pd.to_datetime(start_date)
 
-    st.divider()
+    # Extract day number (Day 1 → 1)
+    df_slots["day_num"] = df_slots["day"].str.extract(r'(\d+)').astype(int)
 
-    # 🔥 Progress Tracking (Improved)
-    st.subheader("✅ Mark Completed Sessions")
+    # Combine date + time
+    df_slots["start_dt"] = (
+        base_date
+        + pd.to_timedelta(df_slots["day_num"] - 1, unit="D")
+        + pd.to_timedelta(df_slots["start"] + ":00")
+    )
 
-    day_wise_slots = defaultdict(list)
-    for slot in result["time_slots"]:
-        day = slot.get("day", "Full Plan")
-        day_wise_slots[day].append(slot)
+    df_slots["end_dt"] = (
+        base_date
+        + pd.to_timedelta(df_slots["day_num"] - 1, unit="D")
+        + pd.to_timedelta(df_slots["end"] + ":00")
+    )
 
-    for day, slots in day_wise_slots.items():
-        st.markdown(f"### 📅 {day}")
-        for i, slot in enumerate(slots):
-            st.checkbox(
-                f"{slot['start']} → {slot['subject']}",
-                key=f"{day}_{i}"
+    timeline = alt.Chart(df_slots).mark_bar().encode(
+        x="start_dt",
+        x2="end_dt",
+        y="day",
+        color="subject",
+        tooltip=["day", "subject", "start", "end"]  # 🔥 better hover
+    )
+
+    st.altair_chart(timeline, use_container_width=True)
+    # ==========================
+    # 🎯 PROGRESS TRACKER
+    # ==========================
+    st.subheader("🎯 Track Progress")
+
+    if "progress" not in st.session_state:
+        st.session_state["progress"] = {}
+
+    for i, row in df_slots.iterrows():
+        key = f"{row['day']}_{i}"
+
+        completed = st.checkbox(
+            f"{row['day']} | {row['subject']} ({row['start']} - {row['end']})",
+            key=key
+        )
+
+        st.session_state["progress"][key] = completed
+
+    if all(st.session_state["progress"].values()) and len(st.session_state["progress"]) > 0:
+        st.success("🎉 You completed your full plan!")
+
+    # ==========================
+    # 🔄 RESCHEDULE
+    # ==========================
+    missed = st.number_input("Missed Day?", min_value=0, value=0)
+
+    if st.button("🔄 Reschedule"):
+
+        if missed > 0:
+            updated_slots = reschedule_plan(
+                st.session_state["result"]["time_slots"],
+                missed
             )
 
-    st.divider()
+            st.session_state["result"]["time_slots"] = updated_slots
 
+            st.success("🔄 Rescheduled!")
+
+            df_updated = pd.DataFrame(updated_slots)
+
+            st.dataframe(
+                df_updated.sort_values(by=["day", "start"]),
+                use_container_width=True
+            )
+
+            st.rerun()
+
+    
+
+    # ==========================
     # 📅 GOOGLE CALENDAR
-    if st.button("📅 Add to Google Calendar"):
-        try:
-            count = create_events(result["time_slots"])
-            st.success(f"✅ {count} events added to Google Calendar!")
-        except Exception as e:
-            st.error(str(e))
+    # ==========================
+    st.info("📌 Requires internet & Google login")
+    if st.button("📅 Add to Calendar"):
+        with st.spinner("📡 Connecting to Google Calendar..."):
 
-    # 📄 PDF DOWNLOAD
-    if st.button("📄 Generate PDF"):
-        file_path = generate_pdf(result)
-        with open(file_path, "rb") as f:
-            st.download_button("⬇ Download PDF", f, "study_plan.pdf")
+            try:
+                create_events(result["time_slots"])
+                st.success("✅ Timetable successfully added to Google Calendar!")
 
-    # 🔄 RESET BUTTON
-    if st.button("🔄 Reset Plan"):
-        st.session_state.clear()
-        st.rerun()
+            except Exception as e:
+                st.error("⚠️ Failed to connect to Google Calendar.")
+                st.caption("Check internet / OAuth setup")
+    
+    # ==========================
+    # 📅 OFFLINE CALENDAR DOWNLOAD
+    # ==========================
+    if st.button("📥 Download Calendar (.ics)"):
+
+        ics_file = generate_ics(result["time_slots"], start_date)
+
+        with open(ics_file, "rb") as f:
+            st.download_button(
+                label="⬇️ Download .ics File",
+                data=f,
+                file_name="study_plan.ics",
+                mime="text/calendar"
+            )
+
+    # ==========================
+    # 💬 AI CHAT
+    # ==========================
+    st.subheader("💬 AI Assistant")
+    st.caption("💡 Try asking: How to improve focus?")
+
+    if "chat" not in st.session_state:
+        st.session_state["chat"] = []
+
+    msg = st.chat_input("Ask something...")
+
+    if msg:
+        st.session_state["chat"].append(("user", msg))
+        res = chat_with_ai(msg, result)
+        st.session_state["chat"].append(("ai", res))
+
+    for role, text in st.session_state["chat"]:
+        st.chat_message(role).write(text)
+
+    # ==========================
+    # 💬 MOTIVATION
+    # ==========================
+    st.subheader("💬 Motivation")
+    st.success(generate_motivation(
+        st.session_state.get("subjects", []),
+        st.session_state.get("priorities", {})
+    ))
+
+    # ==========================
+    # ✅ COMPLETION
+    # ==========================
+    if st.button("✅ Mark Completed"):
+        st.success("🎉 Congratulations! Keep going!")
