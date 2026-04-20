@@ -30,39 +30,66 @@ from motivation_engine import generate_motivation
 st.set_page_config(page_title="Adaptive AI Study Planner", layout="wide")
 
 # ==========================
-# 📄 PDF
+# 📄GENERATE  PDF
 # ==========================
 def generate_pdf(dataframe):
+    from fpdf import FPDF
+    import random
+
     pdf = FPDF()
     pdf.add_page()
 
-    # 🔥 HEADER
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(200, 10, "Personal Study Planner", ln=True, align="C")
+    # ==========================
+    # 🧠 TITLE
+    # ==========================
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Smart Study Planner", ln=True, align="C")
 
-    pdf.ln(5)
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 8, "Personalized Study Timetable", ln=True, align="C")
 
-    
+    pdf.ln(8)
 
-    # 🔥 TABLE HEADER
+    # ==========================
+    # 📊 TABLE HEADER
+    # ==========================
+    pdf.set_fill_color(40, 40, 40)  # dark header
+    pdf.set_text_color(255, 255, 255)
+
     pdf.set_font("Arial", "B", 10)
-    pdf.cell(40, 8, "Day", border=1)
-    pdf.cell(40, 8, "Time", border=1)
-    pdf.cell(110, 8, "Subject", border=1)
+
+    pdf.cell(30, 8, "Day", border=1, fill=True)
+    pdf.cell(50, 8, "Time", border=1, fill=True)
+    pdf.cell(110, 8, "Subject", border=1, fill=True)
     pdf.ln()
 
-    pdf.set_font("Arial", size=10)
+    # ==========================
+    # 📄 TABLE CONTENT
+    # ==========================
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(0, 0, 0)
 
     def clean_text(text):
-        return text.encode("latin-1", "ignore").decode("latin-1")
+        return str(text).encode("latin-1", "ignore").decode("latin-1")
+
+    fill = False  # alternate row color
 
     for _, row in dataframe.iterrows():
-        pdf.cell(40, 8, clean_text(str(row["day"])), border=1)
-        pdf.cell(40, 8, f"{row['start']} - {row['end']}", border=1)
-        pdf.cell(110, 8, clean_text(row["subject"]), border=1)
+        if fill:
+            pdf.set_fill_color(245, 245, 245)
+        else:
+            pdf.set_fill_color(255, 255, 255)
+
+        pdf.cell(30, 8, clean_text(row["day"]), border=1, fill=True)
+        pdf.cell(50, 8, f"{row['start']} - {row['end']}", border=1, fill=True)
+        pdf.cell(110, 8, clean_text(row["subject"]), border=1, fill=True)
         pdf.ln()
 
-    # 🔥 MOTIVATION
+        fill = not fill
+
+    # ==========================
+    # 💬 MOTIVATION
+    # ==========================
     pdf.ln(10)
     pdf.set_font("Arial", "I", 10)
 
@@ -70,11 +97,14 @@ def generate_pdf(dataframe):
         "Stay consistent!",
         "Push your limits!",
         "Discipline beats motivation!",
-        "Focus -> Success!"
-        ]
+        "Focus -> Success!"   # ✅ SAFE TEXT
+    ]
 
-    pdf.cell(200, 10, random.choice(slogans), ln=True)
+    pdf.cell(0, 10, random.choice(slogans), ln=True, align="C")
 
+    # ==========================
+    # 📁 SAVE FILE
+    # ==========================
     file_path = "study_plan.pdf"
     pdf.output(file_path)
 
