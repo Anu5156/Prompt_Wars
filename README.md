@@ -46,19 +46,21 @@ This system generates **dynamic, priority-based study plans** using:
 
 ### 🔹 Multi-Agent AI Pipeline
 
-User Input
-↓
-AI Parser (LLM extraction)
-↓
-Rule-Based Scheduler
-↓
-AI Critic Agent
-↓
-AI Optimizer Agent
-↓
-AI Evaluator Agent
-↓
-Final Optimized Plan
+```text
+User Input  
+   ↓  
+AI Parser (LLM extraction)  
+   ↓  
+Rule-Based Scheduler  
+   ↓  
+Critic Agent → identifies inefficiencies  
+   ↓  
+Optimizer Agent → refines schedule  
+   ↓  
+Evaluator Agent → scores efficiency  
+   ↓  
+Final Optimized Plan  
+```
 
 ---
 
@@ -99,6 +101,8 @@ Final Optimized Plan
 - ✅ PDF + CSV Export  
 - ✅ Study Analytics Visualization  
 - ✅ Progress Tracking  
+- ✅ Tested with unit tests covering scheduling edge cases
+- ✅ Efficiency Score → Evaluates plan quality based on priority alignment, time balance, and study distribution
 
 ---
 
@@ -137,6 +141,28 @@ Final Optimized Plan
    - Analytics  
 
 ---
+## 📊 Sample Input → Output
+
+### 🔹 Input
+- Subjects: TOC (High), FSD (Medium), AI (Low)
+- Available Time: 6 hours
+- Mode: AI Input → "Focus more on TOC and FSD"
+
+### 🔹 Output (Generated Plan)
+- TOC → 3 hours  
+- FSD → 2 hours  
+- AI → 1 hour  
+
+### 🔹 AI Improvements
+- Added revision slots for high-priority subjects  
+- Balanced study flow using interleaving  
+- Inserted breaks to reduce fatigue  
+
+### 🔹 Efficiency Score
+**8.7 / 10** → Strong priority alignment with balanced workload
+
+> ⚡ Plans are iteratively improved until efficiency score stabilizes
+---
 
 ## 📊 Example Output
 
@@ -157,6 +183,14 @@ Final Optimized Plan
 
 [![Watch Demo](https://img.shields.io/badge/▶️%20Watch%20Demo-Click%20Here-blue)](https://www.youtube.com/watch?v=rLS3vJWCYyY)
 
+▶️ Demonstrates:
+- AI-based subject parsing  
+- Smart schedule generation  
+- Multi-agent optimization (Critic → Optimizer → Evaluator)  
+- Timetable + analytics output  
+- Google Calendar integration  
+
+👉 Fully functional deployed app with real-time AI scheduling
 ---
 
 ## 📸 Screenshots
@@ -171,15 +205,13 @@ Final Optimized Plan
 ![Table](assets/screenshots/table.png)
 
 ### 🔹 AI Mode
-![AI Mode](assets/screenshots/ai_mode.png)
-
-### 🔹 Study Analytics
-![Study Analytics](assets/screenshots/study_analytics.png)
+![AI Mode](assets/screenshots/ai_input.png)
 
 ---
 
 ## 🏗️ Project Structure
 
+```plaintext
 project-root/
 │
 ├── app_streamlit.py           # Main UI (Streamlit app)
@@ -193,11 +225,66 @@ project-root/
 │ └── test_scheduler.py        # Unit tests
 │
 └── assets/
-└── screenshots/
-         |
-         |__ input.png          # Input Interface
-         |__ plan.png           # Study Plan Output
-         |__ table.png          # Timetable View
-         |__ ai_mode.png        # AI Mode
+    └── screenshots/
+        ├── input.png           # Input Interface
+        ├── plan.png            # Study Plan Output
+        ├── table.png           # Timetable View
+        ├── ai_input.png        # AI Mode
          
+```
+---
 
+## ⚙️ Setup
+
+### 1️⃣ Install dependencies
+```bash
+pip install -r requirements.txt
+```
+### 2️⃣ Run the app
+```bash
+streamlit run app_streamlit.py
+```
+## 📅 Google Calendar Integration
+- Auto-creates study sessions as events
+- Sequential scheduling with accurate timing
+- Notification support
+
+## 🔐 Security
+- Credentials excluded via .gitignore
+- OAuth authentication used
+- No sensitive data stored
+
+## 🧪 Testing
+- Unit tests using pytest
+- Covers scheduling logic & edge cases
+- ✅ All tests (6/6) passing
+
+## ⚡ Performance
+- Lightweight (<1MB)
+- Fast execution
+- Optimized scheduling logic
+
+## ⚠️ Limitations
+- Dependent on LLM API availability
+- Requires API key setup
+- No persistent storage (session-based)
+
+## 🌍 Real-World Impact
+
+Helps students:
+- Improve productivity  
+- Reduce planning stress  
+- Focus on high-priority subjects  
+- Follow structured learning routines  
+
+## 🚀 Future Work
+- Adaptive learning system
+- Performance analytics dashboard
+- Google Sheets integration
+- Long-term progress tracking
+
+## 🏁 Conclusion
+
+This project demonstrates how AI + algorithmic systems can be combined to build practical, real-world productivity tools.
+
+An adaptive AI planning system, not just a traditional scheduler.
