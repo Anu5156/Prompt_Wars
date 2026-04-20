@@ -204,6 +204,26 @@ The assistant uses layered decision-making:
 
 ---
 
+## 🎥 Demo Video
+
+▶️ Watch full working demo:
+
+[![Watch Demo](https://img.shields.io/badge/▶️%20Watch%20Demo-Click%20Here-blue)][(https://www.youtube.com/watch?v=rLS3vJWCYyY)]
+
+---
+
+## 🎬 Demo Highlights
+
+The demo showcases:
+- AI-based subject parsing (AI mode)
+- Smart schedule generation
+- Multi-agent AI optimization (Planner → Critic → Optimizer)
+- Study analytics visualization
+- Timetable generation
+- PDF + CSV export
+- Google Calendar integration
+
+---
 ## 📸 Screenshots
 
 ### 🔹 Input Interface

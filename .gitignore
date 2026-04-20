@@ -11,3 +11,7 @@ my_credentials.json
 
 # OS files
 .DS_Store
+
+# calendar files
+*.ics
+
